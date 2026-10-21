@@ -273,9 +273,11 @@ const PARTS = {
   const L = DEV.size.length, W = DEV.size.width;
   const cx = (BOARD.x0 + BOARD.x1) / 2;
   const pcb = box(L, DEV.size.pcbThickness, W, MAT.pcbEdge, cx, PCB_BOTTOM + DEV.size.pcbThickness / 2, 0, 0.45);
+  pcb.userData.check = 'pcb';
   esp.add(pcb);
 
   const S = 40;
+  const silkscreen = []; // where each pin name is printed (board-local mm), for the geometry test
   const tex = canvasTexture(Math.round(L * S), Math.round(W * S), (g, w, h) => {
     const X = x => (x - BOARD.x0) * S;
     const Z = z => (z - BOARD.z0) * S;
@@ -309,8 +311,8 @@ const PARTS = {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `700 ${1.05 * S}px Arial, Helvetica, sans-serif`;
-    DEV.leftHeader.forEach((n, i) => g.fillText(n, X(pinLocalX(i)), Z(HALF_SPAN + 1.8)));
-    DEV.rightHeader.forEach((n, i) => g.fillText(n, X(pinLocalX(i)), Z(-HALF_SPAN - 1.8)));
+    DEV.leftHeader.forEach((n, i) => { g.fillText(n, X(pinLocalX(i)), Z(HALF_SPAN + 1.8)); silkscreen.push({ text: n, x: pinLocalX(i), z: HALF_SPAN + 1.8 }); });
+    DEV.rightHeader.forEach((n, i) => { g.fillText(n, X(pinLocalX(i)), Z(-HALF_SPAN - 1.8)); silkscreen.push({ text: n, x: pinLocalX(i), z: -HALF_SPAN - 1.8 }); });
     // mounting holes
     for (const [x, z] of [[BOARD.x0 + 2.4, 11.3], [BOARD.x0 + 2.4, -11.3], [BOARD.x1 - 2.4, 11.3], [BOARD.x1 - 2.4, -11.3]]) {
       g.fillStyle = '#d5ad5f'; g.beginPath(); g.arc(X(x), Z(z), 1.55 * S, 0, Math.PI * 2); g.fill();
@@ -336,7 +338,10 @@ const PARTS = {
     g.fillText('DEVKIT V1', X(5.6), Z(0.75));
   });
   const topMat = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 0.42, clearcoat: 0.55, clearcoatRoughness: 0.25 });
-  esp.add(topPlane(BOARD.x0 + 0.45, BOARD.x1 - 0.45, BOARD.z0 + 0.45, BOARD.z1 - 0.45, PCB_TOP + 0.003, topMat, BOARD));
+  const pcbTop = topPlane(BOARD.x0 + 0.45, BOARD.x1 - 0.45, BOARD.z0 + 0.45, BOARD.z1 - 0.45, PCB_TOP + 0.003, topMat, BOARD);
+  pcbTop.userData.check = 'silkscreen';
+  pcbTop.userData.labels = silkscreen.map(l => ({ ...l, y: PCB_TOP }));
+  esp.add(pcbTop);
 
   // ---- male headers: black plastic spacer on the breadboard, gold pins, solder fillets
   const pinGeo = new THREE.BoxGeometry(0.64, 12.4, 0.64);
@@ -346,7 +351,9 @@ const PARTS = {
   const m = new THREE.Matrix4();
   let k = 0;
   for (const side of [1, -1]) {
-    esp.add(box(15 * PITCH, PCB_BOTTOM, PITCH * 0.98, MAT.blackPlastic, 0, PCB_BOTTOM / 2, side * HALF_SPAN, 0.2));
+    const spacer = box(15 * PITCH, PCB_BOTTOM, PITCH * 0.98, MAT.blackPlastic, 0, PCB_BOTTOM / 2, side * HALF_SPAN, 0.2);
+    spacer.userData.check = 'header-spacer';
+    esp.add(spacer);
     for (let i = 0; i < 15; i++, k++) {
       m.makeTranslation(pinLocalX(i), -6.8 + 12.4 / 2, side * HALF_SPAN);
       pins.setMatrixAt(k, m);
@@ -354,6 +361,7 @@ const PARTS = {
       fillets.setMatrixAt(k, m);
     }
   }
+  pins.userData.check = 'esp32-pins';
   esp.add(pins, fillets);
 
   // ---- ESP32-WROOM-32 module
@@ -419,7 +427,9 @@ const PARTS = {
   const shieldMat = new THREE.MeshStandardMaterial({ color: '#d6dade', metalness: 1, roughness: 0.33 });
   const shieldTopMat = new THREE.MeshStandardMaterial({ map: shTex, metalness: 0.95, roughness: 0.36 });
   const shieldY0 = PCB_TOP + 0.8;
-  esp.add(box(shL, SHIELD.h, SHIELD.w, shieldMat, (SHIELD.x0 + SHIELD.x1) / 2, shieldY0 + SHIELD.h / 2, 0, 0.25));
+  const shield = box(shL, SHIELD.h, SHIELD.w, shieldMat, (SHIELD.x0 + SHIELD.x1) / 2, shieldY0 + SHIELD.h / 2, 0, 0.25);
+  shield.userData.check = 'module-shield';
+  esp.add(shield);
   esp.add(topPlane(SHIELD.x0 + 0.25, SHIELD.x1 - 0.25, -SHIELD.w / 2 + 0.25, SHIELD.w / 2 - 0.25, shieldY0 + SHIELD.h + 0.002, shieldTopMat,
     { x0: SHIELD.x0, x1: SHIELD.x1, z0: -SHIELD.w / 2, z1: SHIELD.w / 2 }));
 
@@ -446,6 +456,7 @@ const PARTS = {
 
   // micro-USB receptacle
   const usb = box(5.2, 2.7, 7.6, MAT.steel, PARTS.usb.x, PCB_TOP + 1.35, 0, 0.45);
+  usb.userData.check = 'usb-receptacle';
   esp.add(usb);
   esp.add(box(0.4, 1.7, 6.4, MAT.hole, PARTS.usb.x + 2.45, PCB_TOP + 1.4, 0));
   esp.add(box(0.5, 0.5, 4.6, MAT.blackPlastic, PARTS.usb.x + 2.5, PCB_TOP + 1.5, 0));
@@ -546,7 +557,9 @@ scene.add(resistor);
   const h = RES_SPAN / 2;
   for (const s of [-1, 1]) {
     const path = roundedPath([v3(s * 2.9, RES_BODY_Y, 0), v3(s * h, RES_BODY_Y, 0), v3(s * h, -6.5, 0)], 0.9);
-    resistor.add(new THREE.Mesh(new THREE.TubeGeometry(path, 48, 0.3, 10), MAT.tin));
+    const lead = new THREE.Mesh(new THREE.TubeGeometry(path, 48, 0.3, 10), MAT.tin);
+    lead.userData.check = 'resistor-lead';
+    resistor.add(lead);
   }
 }
 const resStart = C.holePosition(C.LESSON01.resistor.leads[0]);
@@ -577,7 +590,9 @@ const ledLight = new THREE.PointLight('#ff3020', 0, 45, 2);
   shape.lineTo(flatX, R * Math.sin(a0));
   const flange = new THREE.ExtrudeGeometry(shape, { depth: 0.9, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, curveSegments: 48 });
   flange.rotateX(-Math.PI / 2);
-  inner.add(new THREE.Mesh(flange, epoxy));
+  const flangeMesh = new THREE.Mesh(flange, epoxy);
+  flangeMesh.userData.check = 'led-rim';
+  inner.add(flangeMesh);
   const pts = [v3(0, 0.9, 0), v3(2.5, 0.9, 0), v3(2.5, 6.1, 0)];
   for (let i = 1; i <= 24; i++) {
     const a = (i / 24) * (Math.PI / 2);
@@ -598,8 +613,10 @@ const ledLight = new THREE.PointLight('#ff3020', 0, 45, 2);
   inner.add(ledLight);
   // legs: anode longer than cathode (14 mm vs 12 mm below the rim)
   const legMat = MAT.tin;
-  ledGroup.add(box(0.5, 14, 0.5, legMat, -1.27, LED_LIFT - 7, 0));
-  ledGroup.add(box(0.5, 12, 0.5, legMat, 1.27, LED_LIFT - 6, 0));
+  const longLeg = box(0.5, 14, 0.5, legMat, -1.27, LED_LIFT - 7, 0);
+  const shortLeg = box(0.5, 12, 0.5, legMat, 1.27, LED_LIFT - 6, 0);
+  longLeg.userData.check = shortLeg.userData.check = 'led-leg';
+  ledGroup.add(longLeg, shortLeg);
 }
 const ledAnode = C.holePosition(C.LESSON01.led.anode);
 const ledCathode = C.holePosition(C.LESSON01.led.cathode);
@@ -636,21 +653,32 @@ scene.add(powerHalo);
 
 // ================================================================= JUMPER WIRES
 const WIRE_COLORS = { yellow: '#f5c518', black: '#25272b' };
+const underBoard = H => Math.abs(H.z) < DEV.size.width / 2 + 0.9 &&
+  H.x > esp.position.x + BOARD.x0 - 0.9 && H.x < esp.position.x + BOARD.x1 + 0.9;
 function makeWire(spec, controlPoints) {
   const A = C.holePosition(spec.from), B = C.holePosition(spec.to);
-  const pts = [v3(A.x, 1.7, A.z), ...controlPoints.map(p => v3(...p)), v3(B.x, 1.7, B.z)];
+  // Under the PCB edge there is only 2.5 mm of headroom, so those ends start lower.
+  const y0 = H => (underBoard(H) ? 1.35 : 1.7);
+  const pts = [v3(A.x, y0(A), A.z), ...controlPoints.map(p => v3(...p)), v3(B.x, y0(B), B.z)];
   const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
   const insulation = new THREE.MeshPhysicalMaterial({ color: WIRE_COLORS[spec.color], roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.35 });
   const geo = new THREE.TubeGeometry(curve, 160, 0.78, 14, false);
   const tube = new THREE.Mesh(geo, insulation);
+  tube.userData.check = 'wire-insulation';
+  tube.userData.wire = spec.id;
   const group = new THREE.Group();
   group.add(tube);
   const ends = [A, B].map(H => {
     const g = new THREE.Group();
     const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 7.2, 12), MAT.tin);
     pin.position.set(H.x, 1.8 - 3.6, H.z);
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.84, 1.3, 18), insulation);
-    sleeve.position.set(H.x, 1.7 + 0.45, H.z);
+    // Holes right at the ESP32's edge (a4–a21) sit under the PCB, which is only 2.5 mm above
+    // the breadboard, so the insulation there must stay low and turn outward at once.
+    const sleeveH = underBoard(H) ? 0.5 : 1.3;
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.84, sleeveH, 18), insulation);
+    sleeve.position.set(H.x, y0(H) + sleeveH / 2 - 0.2, H.z);
+    pin.userData.check = 'wire-pin';
+    pin.userData.wire = spec.id;
     g.add(pin, sleeve);
     group.add(g);
     return g;
@@ -671,8 +699,8 @@ const zA = C.columnZ('a');
 const wireSpecs = Object.fromEntries(C.LESSON01.wires.map(w => [w.id, w]));
 const wires = {
   // a11 sits right at the edge of the ESP32 board, so the wire leaves the hole outward first.
-  signal: makeWire(wireSpecs.signal, [[xr(11), 2.2, zA + 1.1], [xr(11) + 0.6, 4.6, zA + 3.6], [xr(17.5), 11.5, zA + 6.2], [xr(24) - 0.8, 6.5, zA + 3.2], [xr(24), 3.0, zA + 0.6]]),
-  gndBoard: makeWire(wireSpecs.gndBoard, [[xr(17), 2.2, zA + 1.1], [xr(16.6), 5.2, zA + 3.2], [xr(15), 6.0, zA + 5.2], [xr(14.15), 3.2, zA + 5.75]]),
+  signal: makeWire(wireSpecs.signal, [[xr(11), 1.7, zA + 1.5], [xr(11) + 0.6, 4.6, zA + 3.6], [xr(17.5), 11.5, zA + 6.2], [xr(24) - 0.8, 6.5, zA + 3.2], [xr(24), 3.0, zA + 0.6]]),
+  gndBoard: makeWire(wireSpecs.gndBoard, [[xr(17), 1.7, zA + 1.5], [xr(16.6), 5.2, zA + 3.2], [xr(15), 6.0, zA + 5.2], [xr(14.15), 3.2, zA + 5.75]]),
   gndLed: makeWire(wireSpecs.gndLed, [[xr(29), 3.4, zA + 0.4], [xr(28.4), 6.6, zA + 2.6], [xr(26.8), 6.4, zA + 5.0], [xr(26.1), 3.2, zA + 5.75]]),
 };
 
@@ -734,17 +762,30 @@ function label(html, anchor, parent = scene, cls = '') {
   parent.add(obj);
   return obj;
 }
+// Label lifted above the board with a thin leader line down to the exact pin,
+// so the tag never hides the printed pin name (silkscreen) next to the pin.
+function callout(html, pinTop, lift, color, cls) {
+  const anchor = pinTop.clone().add(lift);
+  const obj = label(html, anchor, scene, cls);
+  const dir = pinTop.clone().sub(anchor);
+  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, dir.length(), 6),
+    new THREE.MeshBasicMaterial({ color, toneMapped: false }));
+  line.position.copy(dir.clone().multiplyScalar(0.5));
+  line.quaternion.setFromUnitVectors(v3(0, 1, 0), dir.clone().normalize());
+  obj.add(line);
+  return obj;
+}
 const labels = {
   esp: label('ESP32 DevKit V1', v3(esp.position.x - 9, PCB_TOP + 3.4, -4)),
   bb: label('Breadboard', v3(C.rowX(26), 0, C.columnZ('h')), scene, 'below'),
   res: label('<b>330 Ω</b><span class="xl"> resistor</span>', v3(0, RES_BODY_Y + 1.3, 0), resistor),
   led: label('Red LED', v3(0, LED_LIFT + 8.8, 0), ledGroup),
-  gpio: label('<b>GPIO25</b> · pin D25', pinWorld('D25').add(v3(0, 0.6, 0)), scene, 'signal'),
+  gpio: callout('<b>GPIO25</b> · pin D25', pinWorld('D25'), v3(-1.5, 9, -3.5), '#e0b100', 'signal'),
   a11: label('a11', holeWorld('a11'), scene, 'below'),
   a24: label('a24', holeWorld('a24'), scene, 'below'),
   anode: label('<b>Anode +</b><span class="xl"> (long leg)</span>', v3(-1.6, 2.6, 0), ledGroup, 'left'),
   cathode: label('<b>Cathode −</b><span class="xl"> (flat side)</span>', v3(1.27, 0.4, 0.6), ledGroup, 'below'),
-  gnd: label('<b>GND</b> pin', pinWorld('GND').add(v3(0, 0.6, 0)), scene, 'gnd'),
+  gnd: callout('<b>GND</b> pin', pinWorld('GND'), v3(1.5, 9, -3.5), '#3a4656', 'gnd'),
   rail: label('Blue <b>−</b> rail = GND', holeWorld('N-23'), scene, 'below gnd'),
   usb: label('USB cable<span class="xl"> (power + code)</span>', v3(usbPlug.userData.tipX + 18.5, PCB_TOP + 1.5, -16)),
 };
@@ -852,7 +893,7 @@ function placePart(obj, desk, final, p) {
 }
 
 let ledOn = false;
-const LED_GLOW = { epoxy: 1.45, die: 10, light: 9 };
+const LED_GLOW = { epoxy: 1.45, die: 10, light: 3.5 };
 function applyScene(now) {
   const p = reducedMotion ? 1 : clamp01((now - stepStart) / STEPS[step].duration);
   const at = (i, local = p) => (step > i ? 1 : step === i ? local : 0);
@@ -924,7 +965,7 @@ function fitCamera() {
 }
 
 scene.traverse(o => {
-  if (o.isMesh && o.material !== ringMat) { o.castShadow = true; o.receiveShadow = true; }
+  if (o.isMesh && o.material !== ringMat && !o.material.isMeshBasicMaterial) { o.castShadow = true; o.receiveShadow = true; }
 });
 
 function resize() {

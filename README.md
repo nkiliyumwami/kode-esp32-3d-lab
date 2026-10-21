@@ -15,10 +15,16 @@ Open http://localhost:8765 in a modern browser. An internet connection is needed
 ## Tests
 
 ```bash
-npm test   # node --test tests/ (Node 18+, no dependencies)
+npm test             # node --test tests/ (Node 18+, no dependencies)
+npm install          # once, for the scene test (playwright-core only)
+npm run test:scene   # renders the page in Chrome and checks the 3D geometry
 ```
 
 `tests/lesson01-circuit.test.js` checks the lesson wiring as a netlist: the DevKit V1 pin order, 0.9 inch header spacing across the centre channel, D25 in hole b11, resistor bands = 330 Ω, the path GPIO25 → resistor → LED anode → LED cathode → GND, no shorts or bypassed parts, and a safe LED current (about 4 mA).
+
+`tests/independent-wiring.test.js` does not trust the shared data file: it hard-codes the 30-pin DOIT DevKit V1 pin order from published pinouts, rebuilds the breadboard strips and the netlist from scratch, and checks that the data, the wiring checklist in `index.html` and the step texts all agree.
+
+`tests/browser/scene-geometry.mjs` opens the lesson in headless Chrome (set `CHROME_PATH` if Chrome is not at `/usr/bin/google-chrome`), reads the rendered meshes and checks where they really are: every ESP32 pin sits in the right hole (EN at the antenna end, D25 in b11, GND in b17), the board is not mirrored and the printed pin names match the pins, the resistor is in c24/c28, the long LED leg is in e28 and the short leg in e29, and each wire lands in its holes without passing through the board.
 
 ## Lesson 01 — Blink an LED
 
