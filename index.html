@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KODE | ESP32 3D Lab</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#18253a;background:#eef3f8}
+*{box-sizing:border-box}
+body{margin:0}
+header{padding:20px clamp(16px,4vw,48px);background:#101d32;color:white}
+header p{margin:4px 0;color:#b6d3ec}
+main{max-width:1260px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr);gap:20px}
+.panel{background:white;border:1px solid #d5e1ed;border-radius:18px;padding:18px;box-shadow:0 6px 20px #1c33500d}
+#scene{min-height:440px;height:min(61vh,650px);border-radius:12px;background:#e5eef7;overflow:hidden;position:relative}
+#scene canvas{display:block}
+.hint{position:absolute;bottom:8px;left:12px;color:#233c5b;background:#ffffffdf;padding:6px 10px;border-radius:8px;font-size:13px}
+button{border:0;border-radius:9px;background:#196cba;color:white;padding:11px 15px;cursor:pointer;font-weight:700;margin:4px}
+button:focus-visible{outline:3px solid #f8b535;outline-offset:3px}
+button:hover{background:#104f8a}
+button.secondary{background:#e8eff7;color:#17395d}
+button:disabled{opacity:.45;cursor:not-allowed}
+h1{margin:0}
+h2{margin:0 0 14px}
+#stepTitle{margin-bottom:6px}
+#stepText{line-height:1.6}
+.note{background:#e8f5fe;border-left:4px solid #2190c2;padding:12px;line-height:1.5}
+pre{white-space:pre-wrap;background:#17243a;color:#e7f3ff;border-radius:10px;padding:14px;overflow:auto}
+.status{font-size:14px;color:#3a5870}
+@media(max-width:830px){main{grid-template-columns:1fr}#scene{height:370px;min-height:370px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header>
+<h1>⚡ KODE — ESP32 3D Lab</h1>
+<p>Build it. See it. Understand it. — Beginner Proof of Concept</p>
+</header>
+<main>
+<section class="panel">
+<h2>01 · Make an LED blink</h2>
+<div id="scene" role="img" aria-label="Interactive 3D educational scene showing an ESP32 board, resistor, LED and wires in sequence">
+<div class="hint">Drag to rotate • Scroll to zoom • Right-drag to pan</div>
+</div>
+<p class="status" id="progress" aria-live="polite"></p>
+<nav aria-label="Lesson controls">
+<button id="back" class="secondary">← Back</button>
+<button id="next">Next →</button>
+<button id="replay" class="secondary">↻ Replay</button>
+<button id="reset" class="secondary">Reset</button>
+</nav>
+</section>
+<aside class="panel">
+<h2 id="stepTitle" aria-live="polite">Meet the parts</h2>
+<p id="stepText"></p>
+<div class="note"><strong>Why?</strong><p id="why"></p></div>
+<h3>MicroPython example</h3>
+<pre><code id="code">from machine import Pin
+from time import sleep
+
+led = Pin(25, Pin.OUT)
+while True:
+    led.value(1)
+    sleep(1)
+    led.value(0)
+    sleep(1)</code></pre>
+<p class="status">The 3D arrangement is conceptual, not a hole-by-hole wiring verification. A responsible adult should inspect real wiring before USB power.</p>
+</aside>
+</main>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
+<script type="module" src="./assets/app.js"></script>
+</body>
+</html>
