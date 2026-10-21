@@ -3,71 +3,110 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KODE | ESP32 3D Lab</title>
+<title>KODE | ESP32 3D Lab · Lesson 01</title>
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;color:#18253a;background:#eef3f8}
+:root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#18253a;background:#e9eef4;--accent:#196cba}
 *{box-sizing:border-box}
 body{margin:0}
-header{padding:20px clamp(16px,4vw,48px);background:#101d32;color:white}
-header p{margin:4px 0;color:#b6d3ec}
-main{max-width:1260px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1.8fr) minmax(280px,1fr);gap:20px}
-.panel{background:white;border:1px solid #d5e1ed;border-radius:18px;padding:18px;box-shadow:0 6px 20px #1c33500d}
-#scene{min-height:440px;height:min(61vh,650px);border-radius:12px;background:#e5eef7;overflow:hidden;position:relative}
-#scene canvas{display:block}
-.hint{position:absolute;bottom:8px;left:12px;color:#233c5b;background:#ffffffdf;padding:6px 10px;border-radius:8px;font-size:13px}
-button{border:0;border-radius:9px;background:#196cba;color:white;padding:11px 15px;cursor:pointer;font-weight:700;margin:4px}
+header{padding:18px clamp(16px,4vw,48px);background:linear-gradient(120deg,#0c1628,#15294a);color:#fff}
+header h1{margin:0;font-size:clamp(22px,3.4vw,30px)}
+header p{margin:4px 0 0;color:#b6d3ec}
+main{max-width:1320px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:minmax(0,1.85fr) minmax(290px,1fr);gap:20px}
+.panel{background:#fff;border:1px solid #d5e1ed;border-radius:18px;padding:18px;box-shadow:0 6px 20px #1c33500d;min-width:0}
+h2{margin:0 0 12px;font-size:22px}
+#scene{position:relative;height:min(64vh,640px);min-height:440px;border-radius:14px;overflow:hidden;background:#1b2430;outline:none}
+#scene:focus-visible{box-shadow:0 0 0 3px #fff,0 0 0 6px #f8b535}
+#scene canvas{display:block;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none}
+.tag{pointer-events:none;font:600 13px/1.2 system-ui,sans-serif;color:#0f1b2b;background:#fffffff0;border:1px solid #c9d6e4;border-radius:8px;padding:4px 8px;white-space:nowrap;box-shadow:0 2px 8px #0004;transition:opacity .25s}
+.tag b{font-weight:800}
+.tag::after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-bottom:0;border-top-color:#fffffff0}
+.tag.left::after{left:auto;right:-6px;bottom:50%;transform:translateY(50%);border:6px solid transparent;border-right:0;border-left-color:#fffffff0}
+.tag.right::after{left:-6px;bottom:50%;transform:translateY(50%);border:6px solid transparent;border-left:0;border-right-color:#fffffff0}
+.tag.below::after{bottom:auto;top:-6px;border:6px solid transparent;border-top:0;border-bottom-color:#fffffff0}
+.tag.signal{border-color:#e0b100}.tag.gnd{border-color:#3a4656}
+#signal{position:absolute;top:10px;left:10px;font:700 14px/1.3 ui-monospace,Menlo,Consolas,monospace;background:#0d1522e6;color:#e7f3ff;padding:8px 12px;border-radius:10px;border:1px solid #2b3d55;display:none}
+#signal .v{display:inline-block;min-width:9.5ch}
+#signal.on .v{color:#ff8a8a}
+.hint{margin:8px 2px 0;color:#38536f;font-size:13.5px;line-height:1.45}
+.hint kbd{font:600 12px ui-monospace,monospace;background:#eef3f8;border:1px solid #c9d6e4;border-bottom-width:2px;border-radius:5px;padding:0 5px}
+.touch-only{display:none}
+@media (pointer:coarse){.touch-only{display:inline}.mouse-only{display:none}}
+.bar{height:6px;background:#e3ebf3;border-radius:6px;overflow:hidden;margin:12px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.status{font-size:14px;color:#3a5870;margin:6px 0}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+button{border:0;border-radius:10px;background:var(--accent);color:#fff;padding:11px 16px;cursor:pointer;font-weight:700;font-size:15px;min-height:44px}
 button:focus-visible{outline:3px solid #f8b535;outline-offset:3px}
 button:hover{background:#104f8a}
 button.secondary{background:#e8eff7;color:#17395d}
+button.secondary:hover{background:#d6e3f1}
 button:disabled{opacity:.45;cursor:not-allowed}
-h1{margin:0}
-h2{margin:0 0 14px}
-#stepTitle{margin-bottom:6px}
-#stepText{line-height:1.6}
-.note{background:#e8f5fe;border-left:4px solid #2190c2;padding:12px;line-height:1.5}
-pre{white-space:pre-wrap;background:#17243a;color:#e7f3ff;border-radius:10px;padding:14px;overflow:auto}
-.status{font-size:14px;color:#3a5870}
-@media(max-width:830px){main{grid-template-columns:1fr}#scene{height:370px;min-height:370px}}
-@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+#stepTitle{margin-bottom:8px}
+#stepText{line-height:1.6;margin-top:0}
+.note{background:#e8f5fe;border-left:4px solid #2190c2;padding:10px 12px;line-height:1.5;border-radius:0 8px 8px 0}
+.note p{margin:6px 0 0}
+pre{white-space:pre-wrap;background:#17243a;color:#e7f3ff;border-radius:10px;padding:14px;overflow:auto;font-size:14px;line-height:1.5}
+pre .hl{background:#ffd34d33;outline:1px solid #ffd34d66;border-radius:3px}
+.wiring{font-size:14px;line-height:1.55;padding-left:18px;margin:6px 0 12px}
+.small{font-size:13px;color:#3a5870;line-height:1.5}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#fallback{display:none;position:absolute;inset:0;padding:24px;color:#fff;align-items:center;justify-content:center;text-align:center}
+@media(max-width:830px){main{grid-template-columns:1fr;margin-top:12px;padding:0 10px}.panel{padding:12px}#scene{height:min(60vh,420px);min-height:320px}.tag{font-size:11px;padding:3px 6px}}
+@media(max-width:480px){.tag .xl{display:none}main{padding:0 6px}.panel{padding:10px;border-radius:14px}#scene{border-radius:10px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header>
 <h1>⚡ KODE — ESP32 3D Lab</h1>
-<p>Build it. See it. Understand it. — Beginner Proof of Concept</p>
+<p>Build it. See it. Understand it.</p>
 </header>
 <main>
-<section class="panel">
-<h2>01 · Make an LED blink</h2>
-<div id="scene" role="img" aria-label="Interactive 3D educational scene showing an ESP32 board, resistor, LED and wires in sequence">
-<div class="hint">Drag to rotate • Scroll to zoom • Right-drag to pan</div>
+<section class="panel" aria-labelledby="lessonTitle">
+<h2 id="lessonTitle">01 · Make an LED blink</h2>
+<div id="scene" tabindex="0" role="group" aria-roledescription="interactive 3D scene" aria-label="3D model of the lesson circuit. Use arrow keys to rotate, plus and minus to zoom, 0 to reset the view." aria-describedby="sceneDesc">
+<div id="labels" aria-hidden="true"></div>
+<div id="signal" aria-hidden="true">GPIO25 = <span class="v">LOW (0 V)</span></div>
+<div id="fallback">Your browser could not start 3D graphics (WebGL). The lesson text and code on this page still work.</div>
 </div>
+<p id="sceneDesc" class="sr" aria-live="polite"></p>
+<p class="hint"><span class="mouse-only">Drag to rotate · Scroll to zoom · Right-drag to pan.</span><span class="touch-only">Drag to rotate · Pinch to zoom · Two-finger drag to pan.</span> Keyboard: select the scene, then <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> rotate, <kbd>+</kbd><kbd>−</kbd> zoom, <kbd>0</kbd> reset view.</p>
+<div class="bar" aria-hidden="true"><i id="bar"></i></div>
 <p class="status" id="progress" aria-live="polite"></p>
-<nav aria-label="Lesson controls">
+<nav aria-label="Lesson steps">
 <button id="back" class="secondary">← Back</button>
 <button id="next">Next →</button>
-<button id="replay" class="secondary">↻ Replay</button>
-<button id="reset" class="secondary">Reset</button>
+<button id="replay" class="secondary">↻ Replay step</button>
+<button id="reset" class="secondary">Start over</button>
 </nav>
 </section>
-<aside class="panel">
+<aside class="panel" aria-labelledby="stepTitle">
 <h2 id="stepTitle" aria-live="polite">Meet the parts</h2>
 <p id="stepText"></p>
 <div class="note"><strong>Why?</strong><p id="why"></p></div>
-<h3>MicroPython example</h3>
-<pre><code id="code">from machine import Pin
-from time import sleep
+<h3>Wiring checklist</h3>
+<ul class="wiring">
+<li><b>GPIO25</b> = board pin <b>D25</b> → breadboard row 11 → yellow wire <b>a11 → a24</b></li>
+<li><b>330 Ω</b> resistor (orange‑orange‑brown‑gold): <b>c24 ↔ c28</b></li>
+<li>LED <b>anode (+, long leg)</b> in <b>e28</b>; <b>cathode (−, flat side)</b> in <b>e29</b></li>
+<li>Black wire <b>a29 → blue − rail</b>; black wire <b>blue − rail → a17</b> (board <b>GND</b>)</li>
+</ul>
+<h3>MicroPython (projects/01-blink/main.py)</h3>
+<pre><code id="code"><span data-l="1">from machine import Pin</span>
+<span data-l="2">from time import sleep</span>
 
-led = Pin(25, Pin.OUT)
-while True:
-    led.value(1)
-    sleep(1)
-    led.value(0)
-    sleep(1)</code></pre>
-<p class="status">The 3D arrangement is conceptual, not a hole-by-hole wiring verification. A responsible adult should inspect real wiring before USB power.</p>
+<span data-l="3">led = Pin(25, Pin.OUT)</span>
+<span data-l="4">while True:</span>
+<span data-l="5">    led.value(1)   # ON</span>
+<span data-l="6">    sleep(1)</span>
+<span data-l="7">    led.value(0)   # OFF</span>
+<span data-l="8">    sleep(1)</span></code></pre>
+<p class="small">Hole positions follow the 30‑pin DOIT ESP32 DevKit V1 pinout and are checked by automated connection tests. They have not been tested on real hardware yet. Clone boards can differ, so always follow the labels printed on your own board, and ask an adult to check the wiring before plugging in USB.</p>
 </aside>
 </main>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
 <script type="module" src="./assets/app.js"></script>
 </body>
 </html>
